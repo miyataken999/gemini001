@@ -11,7 +11,6 @@ https://docs.djangoproject.com/en/3.2/ref/settings/
 """
 
 import os
-import sys
 from pathlib import Path
 
 from django.core.exceptions import ImproperlyConfigured
@@ -131,10 +130,7 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 SUPPORTBOT_LINE_CHANNEL_SECRET = os.environ.get('SUPPORTBOT_LINE_CHANNEL_SECRET')
 if not SUPPORTBOT_LINE_CHANNEL_SECRET:
-    if 'test' in sys.argv:
-        SUPPORTBOT_LINE_CHANNEL_SECRET = 'test-line-secret'
-    else:
-        raise ImproperlyConfigured('SUPPORTBOT_LINE_CHANNEL_SECRET must be configured.')
+    raise ImproperlyConfigured('SUPPORTBOT_LINE_CHANNEL_SECRET must be configured.')
 
 SUPPORTBOT_KNOWLEDGE_BASE = [
     {

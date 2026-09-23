@@ -28,8 +28,9 @@ class SupportBotWebhookTests(TestCase):
         payload = {
             'events': [
                 {
+                    'type': 'message',
                     'source': {'userId': 'U123'},
-                    'message': {'text': '料金を教えてください'},
+                    'message': {'type': 'text', 'text': '料金を教えてください'},
                 }
             ]
         }
@@ -65,6 +66,23 @@ class SupportBotWebhookTests(TestCase):
         log = InquiryLog.objects.get()
         self.assertEqual(log.status, InquiryLog.Status.ESCALATION)
         self.assertEqual(log.contact, 'hanako@example.com')
+
+    def test_webform_webhook_auto_replies_for_known_question(self):
+        response = self.client.post(
+            reverse('webform-webhook'),
+            data={
+                'name': '山田花子',
+                'email': 'hanako@example.com',
+                'message': '導入までの流れを知りたいです',
+            },
+            content_type='application/json',
+        )
+
+        self.assertEqual(response.status_code, 200)
+        payload = response.json()
+        self.assertEqual(payload['decision'], 'auto_reply')
+        self.assertIn('導入フロー', payload['reply']['text'])
+        self.assertEqual(InquiryLog.objects.get().status, InquiryLog.Status.AUTO_REPLY)
 
     def test_line_webhook_processes_multiple_events(self):
         payload = {

@@ -90,11 +90,11 @@ def _build_line_result(event):
 
 
 def _is_supported_line_text_event(event):
-    if event.get('type') not in ('', None, 'message'):
+    if event.get('type') != 'message':
         return False
 
     message = event.get('message') or {}
-    if message.get('type') not in ('', None, 'text'):
+    if message.get('type') != 'text':
         return False
 
     return bool(message.get('text'))
