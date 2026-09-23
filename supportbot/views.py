@@ -1,11 +1,19 @@
 import json
+from base64 import b64encode
+from hashlib import sha256
+import hmac
 
+from django.conf import settings
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_GET, require_POST
 
 from supportbot.models import InquiryLog
 from supportbot.services import build_response
+
+
+class InvalidPayloadError(Exception):
+    pass
 
 
 @require_GET
@@ -30,7 +38,29 @@ def index(request):
 def _load_body(request):
     if not request.body:
         return {}
-    return json.loads(request.body.decode('utf-8'))
+    try:
+        return json.loads(request.body.decode('utf-8'))
+    except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+        raise InvalidPayloadError from exc
+
+
+def _bad_request_response():
+    return JsonResponse({'error': 'Invalid JSON payload.'}, status=400)
+
+
+def _has_valid_line_signature(request):
+    provided_signature = request.headers.get('X-Line-Signature', '')
+    if not provided_signature:
+        return False
+
+    expected_signature = b64encode(
+        hmac.new(
+            settings.SUPPORTBOT_LINE_CHANNEL_SECRET.encode('utf-8'),
+            request.body,
+            sha256,
+        ).digest()
+    ).decode('utf-8')
+    return hmac.compare_digest(provided_signature, expected_signature)
 
 
 def _save_log(channel, contact, message, response_payload):
@@ -52,7 +82,14 @@ def _save_log(channel, contact, message, response_payload):
 @csrf_exempt
 @require_POST
 def line_webhook(request):
-    payload = _load_body(request)
+    if not _has_valid_line_signature(request):
+        return JsonResponse({'error': 'Invalid LINE signature.'}, status=403)
+
+    try:
+        payload = _load_body(request)
+    except InvalidPayloadError:
+        return _bad_request_response()
+
     event = (payload.get('events') or [{}])[0]
     message = event.get('message', {}).get('text', '')
     contact = event.get('source', {}).get('userId', '')
@@ -65,7 +102,11 @@ def line_webhook(request):
 @csrf_exempt
 @require_POST
 def webform_webhook(request):
-    payload = _load_body(request)
+    try:
+        payload = _load_body(request)
+    except InvalidPayloadError:
+        return _bad_request_response()
+
     message = payload.get('message', '')
     contact = payload.get('email') or payload.get('name', '')
     response_payload = build_response(message=message, channel=InquiryLog.Channel.WEBFORM)
