@@ -66,6 +66,35 @@ class SupportBotWebhookTests(TestCase):
         self.assertEqual(log.status, InquiryLog.Status.ESCALATION)
         self.assertEqual(log.contact, 'hanako@example.com')
 
+    def test_line_webhook_processes_multiple_events(self):
+        payload = {
+            'events': [
+                {
+                    'source': {'userId': 'U100'},
+                    'message': {'text': '料金について知りたいです'},
+                },
+                {
+                    'source': {'userId': 'U200'},
+                    'message': {'text': '個別要件なので相談したいです'},
+                },
+            ]
+        }
+
+        response = self.client.post(
+            reverse('line-webhook'),
+            data=payload,
+            content_type='application/json',
+            headers={'X-Line-Signature': self._line_signature(payload)},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual(data['events_processed'], 2)
+        self.assertEqual(len(data['results']), 2)
+        self.assertEqual(data['results'][0]['decision'], 'auto_reply')
+        self.assertEqual(data['results'][1]['decision'], 'escalation')
+        self.assertEqual(InquiryLog.objects.count(), 2)
+
     def test_webhooks_reject_invalid_json_payloads(self):
         invalid_line_payload = '{"events": ['
         line_response = self.client.post(

@@ -79,6 +79,16 @@ def _save_log(channel, contact, message, response_payload):
     )
 
 
+def _build_line_result(event):
+    message = event.get('message', {}).get('text', '')
+    contact = event.get('source', {}).get('userId', '')
+    response_payload = build_response(message=message, channel=InquiryLog.Channel.LINE)
+    log = _save_log(InquiryLog.Channel.LINE, contact, message, response_payload)
+    response_payload['log_id'] = log.id
+    response_payload['contact'] = contact
+    return response_payload
+
+
 @csrf_exempt
 @require_POST
 def line_webhook(request):
@@ -90,13 +100,11 @@ def line_webhook(request):
     except InvalidPayloadError:
         return _bad_request_response()
 
-    event = (payload.get('events') or [{}])[0]
-    message = event.get('message', {}).get('text', '')
-    contact = event.get('source', {}).get('userId', '')
-    response_payload = build_response(message=message, channel=InquiryLog.Channel.LINE)
-    log = _save_log(InquiryLog.Channel.LINE, contact, message, response_payload)
-    response_payload['log_id'] = log.id
-    return JsonResponse(response_payload)
+    events = payload.get('events') or [{}]
+    results = [_build_line_result(event) for event in events]
+    if len(results) == 1:
+        return JsonResponse(results[0])
+    return JsonResponse({'events_processed': len(results), 'results': results})
 
 
 @csrf_exempt
