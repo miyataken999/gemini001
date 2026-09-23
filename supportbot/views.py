@@ -89,6 +89,17 @@ def _build_line_result(event):
     return response_payload
 
 
+def _is_supported_line_text_event(event):
+    if event.get('type') not in ('', None, 'message'):
+        return False
+
+    message = event.get('message') or {}
+    if message.get('type') not in ('', None, 'text'):
+        return False
+
+    return bool(message.get('text'))
+
+
 @csrf_exempt
 @require_POST
 def line_webhook(request):
@@ -101,7 +112,7 @@ def line_webhook(request):
         return _bad_request_response()
 
     events = payload.get('events') or []
-    results = [_build_line_result(event) for event in events]
+    results = [_build_line_result(event) for event in events if _is_supported_line_text_event(event)]
     if not results:
         return JsonResponse({'events_processed': 0, 'results': []})
     if len(results) == 1:

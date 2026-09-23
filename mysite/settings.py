@@ -11,7 +11,10 @@ https://docs.djangoproject.com/en/3.2/ref/settings/
 """
 
 import os
+import sys
 from pathlib import Path
+
+from django.core.exceptions import ImproperlyConfigured
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -126,7 +129,12 @@ STATIC_URL = '/static/'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-SUPPORTBOT_LINE_CHANNEL_SECRET = os.environ.get('SUPPORTBOT_LINE_CHANNEL_SECRET', SECRET_KEY)
+SUPPORTBOT_LINE_CHANNEL_SECRET = os.environ.get('SUPPORTBOT_LINE_CHANNEL_SECRET')
+if not SUPPORTBOT_LINE_CHANNEL_SECRET:
+    if 'test' in sys.argv:
+        SUPPORTBOT_LINE_CHANNEL_SECRET = 'test-line-secret'
+    else:
+        raise ImproperlyConfigured('SUPPORTBOT_LINE_CHANNEL_SECRET must be configured.')
 
 SUPPORTBOT_KNOWLEDGE_BASE = [
     {

@@ -15,6 +15,7 @@
 
 ```bash
 python -m pip install -r requirements.txt
+export SUPPORTBOT_LINE_CHANNEL_SECRET=your-line-channel-secret
 python manage.py migrate
 python manage.py runserver
 ```

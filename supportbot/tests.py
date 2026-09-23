@@ -70,12 +70,14 @@ class SupportBotWebhookTests(TestCase):
         payload = {
             'events': [
                 {
+                    'type': 'message',
                     'source': {'userId': 'U100'},
-                    'message': {'text': '料金について知りたいです'},
+                    'message': {'type': 'text', 'text': '料金について知りたいです'},
                 },
                 {
+                    'type': 'message',
                     'source': {'userId': 'U200'},
-                    'message': {'text': '個別要件なので相談したいです'},
+                    'message': {'type': 'text', 'text': '個別要件なので相談したいです'},
                 },
             ]
         }
@@ -94,6 +96,33 @@ class SupportBotWebhookTests(TestCase):
         self.assertEqual(data['results'][0]['decision'], 'auto_reply')
         self.assertEqual(data['results'][1]['decision'], 'escalation')
         self.assertEqual(InquiryLog.objects.count(), 2)
+
+    def test_line_webhook_ignores_unsupported_events_in_batch(self):
+        payload = {
+            'events': [
+                {
+                    'type': 'follow',
+                    'source': {'userId': 'U300'},
+                },
+                {
+                    'type': 'message',
+                    'source': {'userId': 'U400'},
+                    'message': {'type': 'text', 'text': '連携できますか'},
+                },
+            ]
+        }
+
+        response = self.client.post(
+            reverse('line-webhook'),
+            data=payload,
+            content_type='application/json',
+            headers={'X-Line-Signature': self._line_signature(payload)},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()['decision'], 'auto_reply')
+        self.assertEqual(InquiryLog.objects.count(), 1)
+        self.assertEqual(InquiryLog.objects.get().contact, 'U400')
 
     def test_line_webhook_ignores_empty_event_batches(self):
         payload = {'events': []}
