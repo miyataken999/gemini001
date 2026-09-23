@@ -5,6 +5,7 @@ import hmac
 
 from django.conf import settings
 from django.http import JsonResponse
+from django.views.decorators.csrf import ensure_csrf_cookie
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_GET, require_POST
 
@@ -17,6 +18,7 @@ class InvalidPayloadError(Exception):
 
 
 @require_GET
+@ensure_csrf_cookie
 def index(request):
     return JsonResponse(
         {
@@ -44,11 +46,20 @@ def _load_body(request):
         raise InvalidPayloadError from exc
 
 
+def _load_payload(request):
+    if request.content_type == 'application/json':
+        return _load_body(request)
+    return request.POST.dict()
+
+
 def _bad_request_response():
     return JsonResponse({'error': 'Invalid JSON payload.'}, status=400)
 
 
 def _has_valid_line_signature(request):
+    if not settings.SUPPORTBOT_LINE_CHANNEL_SECRET:
+        return None
+
     provided_signature = request.headers.get('X-Line-Signature', '')
     if not provided_signature:
         return False
@@ -103,7 +114,10 @@ def _is_supported_line_text_event(event):
 @csrf_exempt
 @require_POST
 def line_webhook(request):
-    if not _has_valid_line_signature(request):
+    signature_is_valid = _has_valid_line_signature(request)
+    if signature_is_valid is None:
+        return JsonResponse({'error': 'LINE channel secret is not configured.'}, status=503)
+    if not signature_is_valid:
         return JsonResponse({'error': 'Invalid LINE signature.'}, status=403)
 
     try:
@@ -123,7 +137,7 @@ def line_webhook(request):
 @require_POST
 def webform_webhook(request):
     try:
-        payload = _load_body(request)
+        payload = _load_payload(request)
     except InvalidPayloadError:
         return _bad_request_response()
 

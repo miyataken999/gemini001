@@ -94,10 +94,27 @@ class SupportBotWebhookTests(TestCase):
                 'email': 'hanako@example.com',
                 'message': '導入までの流れを知りたいです',
             },
-            content_type='application/json',
         )
 
         self.assertEqual(response.status_code, 403)
+
+    def test_webform_webhook_accepts_csrf_protected_form_submission(self):
+        client = Client(enforce_csrf_checks=True)
+        index_response = client.get(reverse('index'))
+        csrf_token = index_response.cookies['csrftoken'].value
+
+        response = client.post(
+            reverse('webform-webhook'),
+            data={
+                'name': '山田花子',
+                'email': 'hanako@example.com',
+                'message': '導入までの流れを知りたいです',
+            },
+            HTTP_X_CSRFTOKEN=csrf_token,
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()['decision'], 'auto_reply')
 
     def test_line_webhook_processes_multiple_events(self):
         payload = {
