@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/3.2/ref/settings/
 """
 
 from pathlib import Path
+import os
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -37,6 +38,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'supportbot',
 ]
 
 MIDDLEWARE = [
@@ -123,3 +125,23 @@ STATIC_URL = '/static/'
 # https://docs.djangoproject.com/en/3.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+SUPPORTBOT_LINE_CHANNEL_SECRET = os.environ.get('SUPPORTBOT_LINE_CHANNEL_SECRET', '')
+
+SUPPORTBOT_KNOWLEDGE_BASE = [
+    {
+        'keywords': ['料金', 'price', '費用'],
+        'answer': 'POCではお問い合わせ件数に応じた従量課金を想定しています。詳細なお見積もりは担当者がヒアリング後にご案内します。',
+        'source': 'Google Sheets / Supabase pricing knowledge',
+    },
+    {
+        'keywords': ['導入', '開始', 'start', 'setup'],
+        'answer': '導入フローは「要件整理 → LINE / Webフォーム接続 → Gemini応答調整 → n8n連携検証」の順で進めます。',
+        'source': 'POC onboarding workflow',
+    },
+    {
+        'keywords': ['連携', 'jira', 'looker', 'supabase', 'gss'],
+        'answer': 'POCでは対応ログを保存したうえで、Jira KAN-14 と Looker Studio に連携しやすい構造化データを返します。',
+        'source': 'Integration workflow overview',
+    },
+]
