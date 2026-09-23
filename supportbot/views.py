@@ -100,8 +100,10 @@ def line_webhook(request):
     except InvalidPayloadError:
         return _bad_request_response()
 
-    events = payload.get('events') or [{}]
+    events = payload.get('events') or []
     results = [_build_line_result(event) for event in events]
+    if not results:
+        return JsonResponse({'events_processed': 0, 'results': []})
     if len(results) == 1:
         return JsonResponse(results[0])
     return JsonResponse({'events_processed': len(results), 'results': results})

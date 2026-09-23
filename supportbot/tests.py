@@ -95,6 +95,20 @@ class SupportBotWebhookTests(TestCase):
         self.assertEqual(data['results'][1]['decision'], 'escalation')
         self.assertEqual(InquiryLog.objects.count(), 2)
 
+    def test_line_webhook_ignores_empty_event_batches(self):
+        payload = {'events': []}
+
+        response = self.client.post(
+            reverse('line-webhook'),
+            data=payload,
+            content_type='application/json',
+            headers={'X-Line-Signature': self._line_signature(payload)},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json(), {'events_processed': 0, 'results': []})
+        self.assertEqual(InquiryLog.objects.count(), 0)
+
     def test_webhooks_reject_invalid_json_payloads(self):
         invalid_line_payload = '{"events": ['
         line_response = self.client.post(
