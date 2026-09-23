@@ -16,6 +16,11 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path
 
+from supportbot.views import index, line_webhook, webform_webhook
+
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path('', index, name='index'),
+    path('api/inquiries/line/', line_webhook, name='line-webhook'),
+    path('api/inquiries/webform/', webform_webhook, name='webform-webhook'),
 ]

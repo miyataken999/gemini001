@@ -1,19 +1,26 @@
-# A Python Django template on Gitpod
+# AI・チャットボット自動連携システム（POC）
 
-This is a [Python Django](https://www.djangoproject.com) template configured for ephemeral development environments on [Gitpod](https://www.gitpod.io/).
+このリポジトリには、LINE Webhook / Webフォームから受けた問い合わせを受信し、Gemini 3.6-flash を想定したナレッジ参照結果に応じて **自動返信** または **有人エスカレーション** を返す最小構成の Django POC を実装しています。
 
-## Next Steps
+## エンドポイント
 
-Click the button below to start a new development environment:
+- `GET /`  
+  POC の概要と利用可能なエンドポイントを返します。
+- `POST /api/inquiries/line/`  
+  LINE Messaging API 互換の簡易 Webhook です。
+- `POST /api/inquiries/webform/`  
+  Web フォームからの問い合わせ受付用エンドポイントです。
 
-[![Open in Gitpod](https://gitpod.io/button/open-in-gitpod.svg)](https://gitpod.io/#https://github.com/gitpod-io/template-python-django)
+## ローカル実行
 
-## Get Started With Your Own Project
+```bash
+python -m pip install -r requirements.txt
+python manage.py migrate
+python manage.py runserver
+```
 
-### A new project
+## テスト
 
-Click the above "Open in Gitpod" button to start a new workspace. Once you're ready to push your first code changes, Gitpod will guide you to fork this project so you own it.
-
-### An existing project
-
-To get started with Python Django on Gitpod, add a [`.gitpod.yml`](./.gitpod.yml) file which contains the configuration to improve the developer experience on Gitpod. To learn more, please see the [Getting Started](https://www.gitpod.io/docs/getting-started) documentation.
+```bash
+python manage.py test
+```
