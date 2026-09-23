@@ -6,8 +6,7 @@ import sys
 
 def main():
     """Run administrative tasks."""
-    settings_module = 'mysite.test_settings' if len(sys.argv) > 1 and sys.argv[1] == 'test' else 'mysite.settings'
-    os.environ.setdefault('DJANGO_SETTINGS_MODULE', settings_module)
+    os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'mysite.settings')
     try:
         from django.core.management import execute_from_command_line
     except ImportError as exc:

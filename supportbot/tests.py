@@ -4,6 +4,7 @@ from base64 import b64encode
 from hashlib import sha256
 
 from django.conf import settings
+from django.test import Client
 from django.test import TestCase
 from django.urls import reverse
 
@@ -83,6 +84,20 @@ class SupportBotWebhookTests(TestCase):
         self.assertEqual(payload['decision'], 'auto_reply')
         self.assertIn('導入フロー', payload['reply']['text'])
         self.assertEqual(InquiryLog.objects.get().status, InquiryLog.Status.AUTO_REPLY)
+
+    def test_webform_webhook_requires_csrf(self):
+        client = Client(enforce_csrf_checks=True)
+        response = client.post(
+            reverse('webform-webhook'),
+            data={
+                'name': '山田花子',
+                'email': 'hanako@example.com',
+                'message': '導入までの流れを知りたいです',
+            },
+            content_type='application/json',
+        )
+
+        self.assertEqual(response.status_code, 403)
 
     def test_line_webhook_processes_multiple_events(self):
         payload = {

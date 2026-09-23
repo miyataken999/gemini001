@@ -23,5 +23,5 @@ python manage.py runserver
 ## テスト
 
 ```bash
-python manage.py test
+DJANGO_SETTINGS_MODULE=mysite.test_settings python manage.py test
 ```

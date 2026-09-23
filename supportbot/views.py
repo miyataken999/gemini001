@@ -120,7 +120,6 @@ def line_webhook(request):
     return JsonResponse({'events_processed': len(results), 'results': results})
 
 
-@csrf_exempt
 @require_POST
 def webform_webhook(request):
     try:
